@@ -14,7 +14,7 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 
 # Network architecture
 ## Latent Action Model
-<img src="image/latent_action_model_architecture.png" width="800">
+<img src="images/latent_action_model_architecture.png" width="800">
 
 ## Video Tokenizer
 
