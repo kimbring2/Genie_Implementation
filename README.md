@@ -17,9 +17,10 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 <img src="images/latent_action_model_architecture.png" width="800">
 
 ## Video Tokenizer
-
+<img src="images/video_tokenizer_architecture" width="800">
 
 ## Dynamics Model
+
 
 # How to train the model?
 ## Collect data
