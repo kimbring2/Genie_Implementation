@@ -34,12 +34,10 @@ pygame.mouse.set_visible(True)
 
 clock = pygame.time.Clock()
 
-
 latent_dim = 512
 num_embeddings = 512
 tokenizer_tf = networks.VQ_VAE(latent_dim, num_embeddings)
 tokenizer_tf.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
-
 
 num_layers = 10
 vocab_size = 512
@@ -89,8 +87,16 @@ def env_step(act_token, k_cache_array, v_cache_array, decode_step):
 
     obs_tokens = tf.TensorArray(dtype=tf.int32, size=0, dynamic_size=True)
 
+    #tf.print("act_token.shape: ", act_token.shape)
+    #tf.print("k_cache_array.shape: ", k_cache_array.shape)
+    #tf.print("v_cache_array.shape: ", v_cache_array.shape)
+    #tf.print("decode_step: ", decode_step)
+
     act_token_emb = world_model.embedding_table_act(act_token)
-    logit_obs, _, _, k_cache_array, v_cache_array = world_model(act_token_emb, decode_step=decode_step, k_cache_array=k_cache_array, v_cache_array=v_cache_array)
+    #tf.print("act_token_emb.shape: ", act_token_emb.shape)
+
+    logit_obs, _, _, k_cache_array, v_cache_array = world_model(act_token_emb, decode_step=decode_step, 
+                                                                k_cache_array=k_cache_array, v_cache_array=v_cache_array)
     logit_obs = tf.squeeze(logit_obs)
     dist = tfd.Categorical(logits=logit_obs)
     sample = dist.sample()
@@ -100,9 +106,14 @@ def env_step(act_token, k_cache_array, v_cache_array, decode_step):
 
     token_add_step = 1
     for i in tf.range(0, tokens_per_block - 1):
-        obs_token_emb = world_model.embedding_table_obs(obs_token)
+        #tf.print("i: ", i)
+        #tf.print("obs_token.shape: ", obs_token.shape)
 
-        logit_obs, _, _, k_cache_array, v_cache_array = world_model(obs_token_emb, decode_step=decode_step + 1 + i, k_cache_array=k_cache_array, v_cache_array=v_cache_array)
+        obs_token_emb = world_model.embedding_table_obs(obs_token)
+        #tf.print("obs_token_emb.shape: ", obs_token_emb.shape)
+
+        logit_obs, _, _, k_cache_array, v_cache_array = world_model(obs_token_emb, decode_step=decode_step + 1 + i, 
+                                                                    k_cache_array=k_cache_array, v_cache_array=v_cache_array)
         logit_obs = tf.squeeze(logit_obs)
 
         if i < tokens_per_block - 2:
@@ -119,6 +130,8 @@ def env_step(act_token, k_cache_array, v_cache_array, decode_step):
     quantized = tf.reshape(quantized, [1, 4, 4, 512])
     reconstructions = tokenizer_tf.decoder(quantized)[0]
     reconstructions = tf.clip_by_value(reconstructions, -0.5, 0.5)
+
+    print("")
 
     return reconstructions, k_cache_array, v_cache_array, obs_tokens
 
@@ -174,7 +187,7 @@ for epoch in range(0, 1000):
         #print("action_token: ", action_token)
         act_token = tf.constant([[action_token]])
         reconstructions, k_cache_array, v_cache_array, obs_tokens = env_step(act_token, k_cache_array, v_cache_array, decode_step)
-        print("obs_tokens: ", obs_tokens)
+        #print("obs_tokens: ", obs_tokens)
         decode_step += 17
 
         if decode_step + 17 >= 340:

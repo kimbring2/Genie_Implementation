@@ -4,8 +4,7 @@ import os
 import gym
 import cv2
 
-env = gym.make('procgen:procgen-coinrun-v0', start_level=10, num_levels=0, render_mode='rgb_array')
-print("env.action_space: ", env.action_space)
+env = gym.make('procgen:procgen-coinrun-v0', start_level=0, num_levels=0, render_mode='rgb_array')
 
 dir_name = 'record_multi'
 if not os.path.exists(dir_name):
@@ -36,15 +35,12 @@ for trial in range(max_trials):
     recording_N.append(1)
     recording_frame.append(obs)
     
-    #action = env.action_space.sample()
     action_index = random.randint(0, len(action_list) - 1)
     action = action_list[action_index]
-    #print("action: ", action)
     recording_action.append(action_index)
 
     obs, reward, done, info = env.step(action)
     obs = obs / 255.0
-    #print("obs.shape: ", obs.shape)
     tot_r += reward
 
     recording_reward.append(reward)

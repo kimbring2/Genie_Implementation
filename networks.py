@@ -45,7 +45,6 @@ class InverseActionPolicy(tf.keras.Model):
     self.conv2d_3 = tf.keras.layers.Conv2D(filters=512, kernel_size=3, strides=(1, 1), activation='relu')
     self.max_pool_2d_3 = tf.keras.layers.MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='valid')
 
-    self.lstm = tf.keras.layers.LSTM(512, return_sequences=True, return_state=True, kernel_regularizer='l2')
     self.common = layers.Dense(num_hidden_units, activation="relu", kernel_regularizer='l2')
 
     self.actor = layers.Dense(num_actions, kernel_regularizer='l2')
@@ -86,7 +85,6 @@ class InverseActionPolicy(tf.keras.Model):
     conv2d_3 = self.max_pool_2d_3(conv2d_3)
 
     conv2d_3_reshaped = tf.reshape(conv2d_3, [batch_size, time_step, *conv2d_3.shape[1:]])
-
     conv2d_3_flanttned = tf.reshape(conv2d_3_reshaped, [batch_size, time_step, -1])
       
     X_input = self.common(conv2d_3_flanttned)
@@ -236,6 +234,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
   def get_config(self):
     config = super().get_config().copy()
     config.update({'shape': self.shape, 'd_model': self.d_model, 'num_heads': self.num_heads})
+    
     return config
     
   def split_heads(self, x, batch_size):
@@ -270,29 +269,46 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     if decode_step is not None and self.mask is not None:
         mask = mask[decode_step]
 
+    #tf.print("decode_step: ", decode_step)
+    #tf.print("q.shape: ", q.shape)
+    #tf.print("k.shape: ", k.shape)
+    #tf.print("v.shape: ", v.shape)
+    #tf.print("mask.shape: ", mask.shape)
+
     matmul_qk = tf.matmul(q, k, transpose_b=True)
-    
+    #tf.print("matmul_qk.shape: ", matmul_qk.shape)
+
     dk = tf.cast(tf.shape(k)[-1], tf.float32)
     scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
-    
+    #tf.print("scaled_attention_logits.shape: ", scaled_attention_logits.shape)
+
     if mask is not None:
       scaled_attention_logits += (mask * -1e9)
         
     attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
     attention_weights = self.dropout_1(attention_weights)
-      
+
+    #tf.print("attention_weights.shape: ", attention_weights.shape)
+    #tf.print("v.shape: ", v.shape)
     scaled_attention = tf.matmul(attention_weights, v)
+    #tf.print("scaled_attention.shape: ", scaled_attention.shape)
+
     scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])
-    #scaled_attention = tf.reshape(scaled_attention, [1, 1, 256])
+    #tf.print("scaled_attention.shape 1: ", scaled_attention.shape)
 
     if decode_step is None:
-        scaled_attention = tf.reshape(scaled_attention, [scaled_attention.shape[0], scaled_attention.shape[1], scaled_attention.shape[2]*scaled_attention.shape[3]])
+        scaled_attention = tf.reshape(scaled_attention, [scaled_attention.shape[0], scaled_attention.shape[1], 
+                                      scaled_attention.shape[2]*scaled_attention.shape[3]])
         scaled_attention = tf.reshape(scaled_attention, [batch_size, self.max_tokens, self.d_model])
     else:
         scaled_attention = tf.reshape(scaled_attention, [batch_size, 1, self.d_model])
+        #tf.print("scaled_attention.shape 2: ", scaled_attention.shape)
       
     output = self.dense(scaled_attention)
     output = self.dropout_2(output)
+
+    #tf.print("output.shape: ", output.shape)
+    #tf.print("")
 
     return output, attention_weights, k_cache, v_cache
 
@@ -332,7 +348,6 @@ class AttentionBlock(tf.keras.layers.Layer):
     return x, k_cache, v_cache
 
 
-
 class AttentionStack(tf.keras.layers.Layer):
   def __init__(self, max_tokens, units, num_heads=1, num_layers=2, dropout_rate=0.1):
     super().__init__()
@@ -343,7 +358,7 @@ class AttentionStack(tf.keras.layers.Layer):
     self.dropout_1 = tf.keras.layers.Dropout(dropout_rate)
     self.attn_blocks = [AttentionBlock(max_tokens=max_tokens, num_heads=num_heads, key_dim=units, dropout=dropout_rate) for n in range(num_layers)]
     self.layernorm_1 = tf.keras.layers.LayerNormalization()
-      
+    
   def call(self, inputs, decode_step=None, k_cache_array=None, v_cache_array=None, training=False):
     inputs_shape = inputs.shape
 
@@ -406,6 +421,10 @@ class WorldModel(tf.keras.Model):
         self.head_ends = tf.keras.Sequential([tf.keras.layers.Dense(units=units, activation='relu'), tf.keras.layers.Dense(units=2)])
         
     def call(self, tokens, decode_step=None, k_cache_array=None, v_cache_array=None):
+        #print("tokens.shape: ", tokens.shape)
+        #print("k_cache_array.shape: ", k_cache_array.shape)
+        #print("v_cache_array.shape: ", v_cache_array.shape)
+
         batch_size = tokens.shape[0]
         token_size = tokens.shape[1]
 
@@ -431,23 +450,31 @@ class WorldModel(tf.keras.Model):
                 token_obs = tf.gather_nd(token, tf.expand_dims(obs_slice, 1))
                 token_act = tf.gather_nd(token, tf.expand_dims(act_slice, 1))
 
+                #print("token_obs.shape: ", token_obs.shape)
+                #print("token_act.shape: ", token_act.shape)
+
                 token_obs_emb = self.embedding_table_obs(token_obs)
                 token_act_emb = self.embedding_table_act(token_act)
 
                 output_batch = tf.tensor_scatter_nd_update(output_batch, tf.expand_dims(act_slice, 1), token_act_emb, name=None)
+
                 output_batch = tf.tensor_scatter_nd_update(output_batch, tf.expand_dims(obs_slice, 1), token_obs_emb, name=None)                                     
             
                 x = x.write(i, output_batch)
 
             x = x.stack()
         
-            emb = self.pos_emb(prev_steps + np.arange(num_steps))
+            emb = self.pos_emb(prev_steps + tf.range(num_steps))
             x = x + emb
         else:
+            #print("prev_steps: ", prev_steps)
+            #print("tf.range(num_steps): ", tf.range(num_steps))
+
             emb = self.pos_emb(prev_steps + tf.range(num_steps))
             x = tokens + emb
 
         logits, k_cache_array, v_cache_array = self.attn_stack(x, decode_step, k_cache_array, v_cache_array)
+        #print("logits.shape: ", logits.shape)
 
         logits_obs = tf.TensorArray(dtype=tf.float32, size=0, dynamic_size=True)
         logits_rew = tf.TensorArray(dtype=tf.float32, size=0, dynamic_size=True)
@@ -466,9 +493,13 @@ class WorldModel(tf.keras.Model):
         logits_obs = logits_obs.stack()
         logits_rew = logits_rew.stack()
         logits_end = logits_end.stack()
+
+        #print("logits_obs.shape 1: ", logits_obs.shape)
     
         logits_obs = self.head_observations(logits_obs)
         #logits_rew = self.head_rewards(logits_rew)
         logits_end = self.head_ends(logits_end)
+
+        #print("logits_obs.shape 2: ", logits_obs.shape)
 
         return logits_obs, 0, logits_end, k_cache_array, v_cache_array

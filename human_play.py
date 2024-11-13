@@ -21,7 +21,7 @@ pygame.mouse.set_visible(True)
 
 clock = pygame.time.Clock()
 
-env = gym.make('procgen:procgen-coinrun-v0', start_level=0, num_levels=1, render_mode='rgb_array')
+env = gym.make('procgen:procgen-coinrun-v0', start_level=0, num_levels=0, render_mode='rgb_array')
 #env = gym.make('procgen:procgen-coinrun-v0', start_level=10, num_levels=0, render_mode='rgb_array')
 print("env.action_space: ", env.action_space)
 

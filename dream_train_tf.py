@@ -14,17 +14,25 @@ import sys
 import math
 
 import tensorflow as tf
+import tensorflow_probability as tfp
+
 import utils
 import networks
+
+tfd = tfp.distributions
 
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
 
+num_actions = 7
+num_hidden_units = 2048
+lam_model = networks.InverseActionPolicy(num_actions, num_hidden_units)
+lam_model.load_weights("model/IDM_Model_80")
+
 latent_dim = 512
 num_embeddings = 512
-tokenizer_tf = networks.VQ_VAE(latent_dim, num_embeddings)
-tokenizer_tf.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
-
+tokenizer_model = networks.VQ_VAE(latent_dim, num_embeddings)
+tokenizer_model.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
 
 num_layers = 10
 vocab_size = 512
@@ -43,6 +51,7 @@ obs_tokens_pattern = 1 - act_tokens_pattern
 obs_slicer = networks.Slicer(max_blocks, obs_tokens_pattern)
 act_slicer = networks.Slicer(max_blocks, act_tokens_pattern)
 head_obs_slicer = networks.Slicer(max_blocks, all_but_last_obs_tokens_pattern)
+
 world_model = networks.WorldModel(max_blocks=max_blocks, tokens_per_block=tokens_per_block, max_tokens=max_tokens, obs_vocab_size=vocab_size, 
                                   act_vocab_size=num_actions, units=embed_dim, dropout_rate=0.1, num_layers=num_layers, num_heads=4, 
                                   obs_slicer=obs_slicer, act_slicer=act_slicer, head_obs_slicer=head_obs_slicer)
@@ -98,7 +107,7 @@ class CoinRunDataset:
     __call__ = __iter__
 
 
-batch_size = 32
+batch_size = 16
 data_dir = "record_single"
 ds_gen = CoinRunDataset(data_dir=data_dir, set='train', batch_size=batch_size)
 ds = tf.data.Dataset.from_generator(ds_gen, (tf.float32, tf.float32, tf.float32, tf.bool, tf.int16))
@@ -110,8 +119,21 @@ for epoch in range(0, 1000000):
     train_losses = []
     for step, batch in enumerate(ds):
         #print("step: ", step)
-        video, action, reward, done, N = batch
+        video, action_, reward, done, N = batch
+        #video, _, reward, done, N = batch
         #print("video.shape: ", video.shape)
+        #print("action.shape 1: ", action_.shape)
+
+        act_pi = lam_model(video, training=False)
+        act_dist = tfd.Categorical(logits=act_pi)
+        action = act_dist.sample()
+        action = tf.cast(action, tf.float32)
+        action = tf.expand_dims(action, 2)
+        #print("action.shape 2: ", action.shape)
+        #print("    action: ", tf.squeeze(action))
+        #print("pre_action.tolist(): ", pre_action.tolist())
+        #print("pre_action: ", pre_action)
+        #print("")
 
         #for frame in video[0]:
             #print("frame.shape: ", frame.shape)
@@ -133,9 +155,9 @@ for epoch in range(0, 1000000):
         #batch_obs = np.transpose(batch_obs, [0, 1, 3, 4, 2])
         batch_obs = np.reshape(batch_obs, [batch_obs.shape[0] * batch_obs.shape[1], batch_obs.shape[2], batch_obs.shape[3], batch_obs.shape[4]])
         
-        encoder_outputs = tokenizer_tf.encoder(batch_obs)
+        encoder_outputs = tokenizer_model.encoder(batch_obs)
         #print("encoder_outputs.shape: ", encoder_outputs.shape)
-        quantized_latents, encoding_indices = tokenizer_tf.vq_layer(encoder_outputs)
+        quantized_latents, encoding_indices = tokenizer_model.vq_layer(encoder_outputs)
         
         #print("encoding_indices.shape: ", encoding_indices.shape)
         obs_tokens = tf.reshape(encoding_indices, [batch_obs.shape[0], tokens_per_block - 1])
