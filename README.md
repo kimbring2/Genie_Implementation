@@ -21,10 +21,10 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 
 ## Dynamics Model
 ### Attention Block
-<img src="images/attention_block" width="400">
+<img src="images/attention_block.png" width="400">
 
 ### Attention Stack
-<img src="images/attention_stack" width="400">
+<img src="images/attention_stack.png" width="400">
 
 ### World Model
 
