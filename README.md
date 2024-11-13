@@ -30,7 +30,7 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 <img src="images/attention_mask.png" width="800">
 
 ### 4. Mechanism of Multi-Head Attention Masking
-<img src="images/multi_head_attention_masking" width="800">
+<img src="images/multi_head_attention_masking.png" width="800">
 
 # How to train the model?
 ## Collect data
