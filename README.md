@@ -26,6 +26,8 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 ### 2. World Model(When Training the model)
 <img src="images/world_model_train_architecture.png" width="800">
 
+### 3. World Model(When Testing the model)
+
 # How to train the model?
 ## Collect data
 ```
