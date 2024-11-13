@@ -20,8 +20,8 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 <img src="images/video_tokenizer_architecture.png" width="800">
 
 ## Dynamics Model
-### 1. Attention Block <img src="images/attention_block.png" width="200"> 
-### 2. Attention Stack <img src="images/attention_stack.png" width="200">
+### 1. Attention Block & Block
+<img src="images/attention_block.png" width="200"> Attention Stack <img src="images/attention_stack.png" width="200">
 
 ### 3. World Model(When Training the model)
 <img src="images/world_model_train_architecture.png" width="800">
