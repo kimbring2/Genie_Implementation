@@ -26,7 +26,8 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 ### 2. Attention Stack
 <img src="images/attention_stack.png" width="400">
 
-### 3. World Model
+### 3. World Model(When Training the model)
+<img src="images/world_model_train_architecture.png" width="400">
 
 # How to train the model?
 ## Collect data
