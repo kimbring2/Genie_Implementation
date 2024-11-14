@@ -32,6 +32,9 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 ### 4. Mechanism of Multi-Head Attention Masking
 <img src="images/multi_head_attention_masking.png" width="800">
 
+### 5. Tokens flowing when generating the world
+<img src="images/token_flowing_when_testing.png" width="800">
+
 # How to train the model?
 ## Collect data
 ```
