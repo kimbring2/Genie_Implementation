@@ -82,7 +82,7 @@ tokenizer_tf.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
 world_model.load_weights("model/world_model_2")
 ```
 
-After making the change, let's start testing.
+After making the change, let's start testing. You can control the agent using the `w`, `a', and 'd' keys.
 ```
 $ python dream_play_tf.py 
 ```
@@ -90,4 +90,4 @@ $ python dream_play_tf.py
 Because the current model is at a basic level, it only works for a single game-level generation.
 <img src="images/genie_demo_video.gif" width="400">
 
-You can also download and check the above result yourself using the [pre-traied model](https://drive.google.com/drive/folders/1lZuT-IotB8hd-BlVraYBuCqpBxjPJUXq?usp=drive_link)
+You can also download and check the above result yourself using the [pre-traied model](https://drive.google.com/drive/folders/1lZuT-IotB8hd-BlVraYBuCqpBxjPJUXq?usp=drive_link).
