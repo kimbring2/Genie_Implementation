@@ -37,26 +37,56 @@ Implementation of the [Genie: Generative Interactive Environments](https://deepm
 
 # How to train the model?
 ## Collect data
+The training data is OpenAI Procgen's CoinRun game data. Use the ```extract.py``` file, but to improve collection speed, you can run multiple files simultaneously with the command below.
 ```
-$ python 
+$ ./data_collect.bash
 ```
+
+The data is saved in ```npy``` format with a random name under the ```record``` folder in the working directory. Therefore, please check if it works by opening it.
 
 ## Training the Latent Action Model
+Next, let's train a model to find out what actions were performed in image frames. The file is designed to be run in the Jupyter Notebook file, ```vq_vae_coinrun.ipynb```. Thus, the training situation can be monitored in real time.
 ```
-$ python 
+$ python idm_training.py
 ```
+The trained model is saved in the ```IDM_Model_{epoch}``` name under the model folder in the working directory every 10 epochs. Please make sure to check if it works well by checking the folder.
 
 ## Training the Video Tokenizer
+Next, let’s learn a model that converts the image frame into a token.
 ```
-$ python 
+$ Jupyter Notebook 
 ```
+
+The trained model is saved in the ```CoinRun_VAVAE_Model_{0}.ckpt``` name under the model folder in the working directory every 10 epochs. Please make sure to check if it works well by checking the folder.
 
 ## Training the Dynamics Model
+After training both the previous two models, it is now time to train the Genie model. First, open the ```dream_train_tf.py``` file and then change the paths below to the file names you want to use.
+
 ```
-$ python 
+tokenizer_tf.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
+world_model.load_weights("model/world_model_1")
 ```
 
-# How to test the model?
+After making the change, let's start training.
 ```
+$ python dream_train_tf.py 
+```
+
+The trained model is saved in the ```world_model_{epoch}``` name under the model folder in the working directory every 10 epochs. Please make sure to check if it works well by checking the folder.
+
+# How to test the model?
+After training the dynamic models, please open the ```dream_play_tf.py``` file and then change the paths below to the file names you want to use.
+
+```
+tokenizer_tf.load_weights("model/CoinRun_VAVAQ_Model_60.ckpt")
+world_model.load_weights("model/world_model_2")
+```
+
+After making the change, let's start testing.
+```
+$ python dream_play_tf.py 
+```
+
+
 $ python learner.py --env_num 4 --gpu_use True --model_name fullyconv  --gradient_clipping 10.0
 ```
