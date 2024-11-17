@@ -91,3 +91,9 @@ Because the current model is at a basic level, it only works for a single game-l
 <img src="images/genie_demo_video.gif" width="400">
 
 You can also download and check the above result yourself using the [pre-traied model](https://drive.google.com/drive/folders/1lZuT-IotB8hd-BlVraYBuCqpBxjPJUXq?usp=drive_link).
+
+
+# Detailed information
+I am writing an explanation for code at Medium as a series.
+
+1. Base Structure: https://dohyeongkim.medium.com/deepmind-genie-implementation-series-1-base-structure-47727338cc1a
